@@ -1,6 +1,6 @@
 {
   "name": "lb-fetch",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Load balanced fetch",
   "license": "MIT",
   "repository": {
