@@ -21,6 +21,7 @@ jobs:
       - run: npm run build
       - run: npm pkg delete devDependencies
       - run: npm prune
+      - run: npm shrinkwrap
       - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
