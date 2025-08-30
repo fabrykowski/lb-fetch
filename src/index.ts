@@ -5,6 +5,17 @@ export type Balancer<InputType = string | URL> = (
 
 export type SuccessPredicate = (response: Response) => boolean;
 
+export type LbResponse = Response &
+  (
+    | {
+        ok: true;
+        lb: {
+          url: string;
+        };
+      }
+    | { ok: false }
+  );
+
 type LbOptions<InputType = string | URL> = {
   fetch: typeof fetch;
   balancer: Balancer<InputType>;
@@ -42,31 +53,32 @@ export function lbFetch(
   input: (string | URL)[],
   init?: RequestInit,
   options?: Partial<LbOptions>
-): Promise<Response>;
+): Promise<LbResponse>;
 export function lbFetch<InputType = string | URL>(
   input: InputType[],
   init: RequestInit | undefined,
   options: Partial<Omit<LbOptions<InputType>, 'balancer'>> &
     Pick<LbOptions<InputType>, 'balancer'>
-): Promise<Response>;
+): Promise<LbResponse>;
 export async function lbFetch<InputType = string | URL>(
   input: InputType[],
   init?: RequestInit,
   options?: Partial<LbOptions<InputType>>
-): Promise<Response> {
+): Promise<LbResponse> {
   const opts = { ...defaultOptions, ...options } as LbOptions<InputType>;
   const urls = await opts.balancer(input, init);
 
   if (urls.length === 0)
     throw new Error('No URLs to load. Please check your balancer function.');
 
-  let response: Response = Response.error();
+  let response = Response.error() as LbResponse;
 
   for (const url of urls) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      response = await opts.fetch(url, init);
+      response = (await opts.fetch(url, init)) as LbResponse;
       if (opts.success(response)) {
+        (response as unknown as Record<string, unknown>).lb = { url };
         return response;
       }
     } catch {
